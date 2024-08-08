@@ -1,31 +1,19 @@
-import redisClient from '../utils/redis.js';
-import { usersCollection, filesCollection } from '../utils/db.js';
+/* eslint-disable import/no-named-as-default */
+import redisClient from '../utils/redis';
+import dbClient from '../utils/db';
 
-/**
- * AppController handles the basic application routes.
- */
-class AppController {
-  /**
-   * getStatus - Returns the status of Redis and MongoDB connections.
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  static async getStatus(req, res) {
-    const redisStatus = await redisClient.ping();  // Check Redis connection status
-    const dbStatus = (await usersCollection.findOne()) !== null;  // Check MongoDB connection status
-    res.status(200).json({ redis: redisStatus === 'PONG', db: dbStatus });
+export default class AppController {
+  static getStatus(req, res) {
+    res.status(200).json({
+      redis: redisClient.isAlive(),
+      db: dbClient.isAlive(),
+    });
   }
 
-  /**
-   * getStats - Returns the count of users and files in the database.
-   * @param {Object} req - Express request object
-   * @param {Object} res - Express response object
-   */
-  static async getStats(req, res) {
-    const usersCount = await usersCollection.countDocuments();  // Count number of users
-    const filesCount = await filesCollection.countDocuments();  // Count number of files
-    res.status(200).json({ users: usersCount, files: filesCount });
+  static getStats(req, res) {
+    Promise.all([dbClient.nbUsers(), dbClient.nbFiles()])
+      .then(([usersCount, filesCount]) => {
+        res.status(200).json({ users: usersCount, files: filesCount });
+      });
   }
 }
-
-export default AppController;
