@@ -1,16 +1,23 @@
 import { MongoClient } from 'mongodb';
-import { promisify } from 'util';
+import dotenv from 'dotenv';
 
-const client = new MongoClient('mongodb://localhost:27017');
+dotenv.config();
 
-const connectDB = async () => {
-  await client.connect();
-  console.log('Connected to MongoDB');
-};
+const client = new MongoClient(process.env.DB_HOST || 'mongodb://localhost:27017');
+const dbName = 'files_manager';
+let db = null;
 
-const db = client.db('files_manager');
+/**
+ * Connect to the MongoDB database
+ */
+async function connectDB() {
+  if (!db) {
+    await client.connect();
+    db = client.db(dbName);
+  }
+  return db;
+}
 
-const usersCollection = db.collection('users');
-const filesCollection = db.collection('files');
-
-export { connectDB, usersCollection, filesCollection };
+// Export the collections for users and files
+export const usersCollection = connectDB().then(db => db.collection('users'));
+export const filesCollection = connectDB().then(db => db.collection('files'));
